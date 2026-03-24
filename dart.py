@@ -1681,9 +1681,17 @@ if __name__ == "__main__":
     )
     parser.add_argument("--host", default="0.0.0.0", help="Host to bind (http/sse mode)")
     parser.add_argument("--port", type=int, default=8000, help="Port to listen on (http/sse mode)")
+    parser.add_argument(
+        "--stateless-http",
+        action="store_true",
+        help="Cursor 등 일부 클라이언트 호환용 stateless HTTP (transport가 http일 때)",
+    )
     args = parser.parse_args()
 
     if args.transport == "stdio":
         mcp.run()
     else:
-        mcp.run(transport=args.transport, host=args.host, port=args.port)
+        run_kw: dict = {"host": args.host, "port": args.port}
+        if args.transport == "http" and args.stateless_http:
+            run_kw["stateless_http"] = True
+        mcp.run(transport=args.transport, **run_kw)
