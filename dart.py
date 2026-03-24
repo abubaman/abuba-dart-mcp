@@ -1,6 +1,6 @@
 import httpx
 from typing import Any, Dict, List, Optional, Tuple, Set
-from mcp.server.fastmcp import FastMCP, Context
+from fastmcp import FastMCP, Context
 import os
 import zipfile
 import xml.etree.ElementTree as ET
@@ -823,14 +823,14 @@ async def search_disclosure(
         if requested_items:
             info_msg += f" {', '.join(requested_items)} 관련"
         info_msg += " 재무 정보를 검색합니다."
-        ctx.info(info_msg)
+        await ctx.info(info_msg)
 
         # end_date 조정
         original_end_date = end_date
         adjusted_end_date, was_adjusted = adjust_end_date(end_date)
 
         if was_adjusted:
-            ctx.info(
+            await ctx.info(
                 f"공시 제출 기간을 고려하여 검색 종료일을 {original_end_date}에서 {adjusted_end_date}로 자동 조정했습니다."
             )
             end_date = adjusted_end_date
@@ -840,7 +840,7 @@ async def search_disclosure(
         if not corp_code:
             return f"회사 검색 오류: {matched_name}"
 
-        ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
+        await ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
 
         # 공시 목록 조회
         disclosures, error_msg = await get_disclosure_list(
@@ -855,7 +855,7 @@ async def search_disclosure(
                 date_range_msg += f" (원래 요청: {start_date}~{original_end_date}, 공시 제출 기간 고려하여 확장)"
             return f"{date_range_msg} '{matched_name}'(고유번호: {corp_code})의 정기공시가 없습니다."
 
-        ctx.info(
+        await ctx.info(
             f"{len(disclosures)}개의 정기공시를 찾았습니다. XBRL 데이터 조회 및 분석을 시도합니다."
         )
 
@@ -914,7 +914,7 @@ async def search_disclosure(
             processed_count += 1
             await ctx.report_progress(processed_count, disclosure_count)
 
-            ctx.info(
+            await ctx.info(
                 f"공시 {processed_count}/{disclosure_count} 분석 중: {report_name} (접수번호: {rcept_no})"
             )
 
@@ -935,7 +935,7 @@ async def search_disclosure(
                         )
                     except Exception as e:
                         parse_error = e
-                        ctx.warning(f"XBRL 파싱/분석 중 오류 발생 ({report_name}): {e}")
+                        await ctx.warning(f"XBRL 파싱/분석 중 오류 발생 ({report_name}): {e}")
                         financial_data = {
                             key: "분석 중 예외 발생" for key in items_to_extract
                         }
@@ -977,11 +977,11 @@ async def search_disclosure(
 
                     result += "\n" + "-" * 50 + "\n\n"
                 else:
-                    ctx.info(
+                    await ctx.info(
                         f"[{report_name}] 건너뜀: 요청하신 항목({', '.join(requested_items) if requested_items else '전체'}) 관련 유효 데이터 없음."
                     )
             except Exception as e:
-                ctx.error(f"공시 처리 중 예상치 못한 오류 발생 ({report_name}): {e}")
+                await ctx.error(f"공시 처리 중 예상치 못한 오류 발생 ({report_name}): {e}")
                 api_errors.append(f"{report_name}: {str(e)}")
                 traceback.print_exc()
 
@@ -1050,19 +1050,19 @@ async def search_detailed_financial_data(
         # 모든 재무제표 유형을 처리할 경우
         if statement_type is None:
             all_statement_types = list(STATEMENT_TYPES.keys())
-            ctx.info(
+            await ctx.info(
                 f"{company_name}의 모든 재무제표(재무상태표, 손익계산서, 현금흐름표) 세부 정보를 검색합니다."
             )
         else:
             all_statement_types = [statement_type]
-            ctx.info(f"{company_name}의 {statement_type} 세부 정보를 검색합니다.")
+            await ctx.info(f"{company_name}의 {statement_type} 세부 정보를 검색합니다.")
 
         # end_date 조정
         original_end_date = end_date
         adjusted_end_date, was_adjusted = adjust_end_date(end_date)
 
         if was_adjusted:
-            ctx.info(
+            await ctx.info(
                 f"공시 제출 기간을 고려하여 검색 종료일을 {original_end_date}에서 {adjusted_end_date}로 자동 조정했습니다."
             )
             end_date = adjusted_end_date
@@ -1072,7 +1072,7 @@ async def search_detailed_financial_data(
         if not corp_code:
             return f"회사 검색 오류: {matched_name}"
 
-        ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
+        await ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
 
         # 공시 목록 조회
         disclosures, error_msg = await get_disclosure_list(
@@ -1087,7 +1087,7 @@ async def search_detailed_financial_data(
                 date_range_msg += f" (원래 요청: {start_date}~{original_end_date}, 공시 제출 기간 고려하여 확장)"
             return f"{date_range_msg} '{matched_name}'(고유번호: {corp_code})의 정기공시가 없습니다."
 
-        ctx.info(
+        await ctx.info(
             f"{len(disclosures)}개의 정기공시를 찾았습니다. XBRL 데이터 조회 및 분석을 시도합니다."
         )
 
@@ -1111,7 +1111,7 @@ async def search_detailed_financial_data(
                 if not rcept_no or not reprt_code:
                     continue
 
-                ctx.info(f"공시 분석 중: {report_name} (접수번호: {rcept_no})")
+                await ctx.info(f"공시 분석 중: {report_name} (접수번호: {rcept_no})")
 
                 # XBRL 데이터 조회
                 xbrl_text = await get_financial_statement_xbrl(rcept_no, reprt_code)
@@ -1131,14 +1131,14 @@ async def search_detailed_financial_data(
                 else:
                     error_summary = xbrl_text.split("\n")[0][:100]
                     api_errors.append(f"{report_name}: {error_summary}")
-                    ctx.warning(
+                    await ctx.warning(
                         f"XBRL 데이터 조회 오류 ({report_name}): {error_summary}"
                     )
             except Exception as e:
                 api_errors.append(
                     f"{report_name if 'report_name' in locals() else '알 수 없는 보고서'}: {str(e)}"
                 )
-                ctx.error(f"공시 데이터 처리 중 예상치 못한 오류 발생: {e}")
+                await ctx.error(f"공시 데이터 처리 중 예상치 못한 오류 발생: {e}")
                 traceback.print_exc()
 
         # 각 재무제표 유형별 처리
@@ -1198,14 +1198,14 @@ async def search_detailed_financial_data(
 
                             result += "\n"
                         else:
-                            ctx.info(
+                            await ctx.info(
                                 f"[{report_name}] {current_statement_type}의 유효한 데이터가 없습니다."
                             )
                     except Exception as e:
-                        ctx.warning(f"XBRL 파싱/분석 중 오류 발생 ({report_name}): {e}")
+                        await ctx.warning(f"XBRL 파싱/분석 중 오류 발생 ({report_name}): {e}")
                         api_errors.append(f"{report_name} 분석 중 오류: {str(e)}")
                 except Exception as e:
-                    ctx.error(f"공시 데이터 처리 중 예상치 못한 오류 발생: {e}")
+                    await ctx.error(f"공시 데이터 처리 중 예상치 못한 오류 발생: {e}")
                     api_errors.append(f"공시 데이터 처리 오류: {str(e)}")
                     traceback.print_exc()
 
@@ -1282,14 +1282,14 @@ async def search_business_information(
             return f"지원하지 않는 정보 유형입니다. 지원되는 유형: {', '.join(supported_types)}"
 
         # 진행 상황 알림
-        ctx.info(f"{company_name}의 {information_type} 정보를 검색합니다.")
+        await ctx.info(f"{company_name}의 {information_type} 정보를 검색합니다.")
 
         # end_date 조정
         original_end_date = end_date
         adjusted_end_date, was_adjusted = adjust_end_date(end_date)
 
         if was_adjusted:
-            ctx.info(
+            await ctx.info(
                 f"공시 제출 기간을 고려하여 검색 종료일을 {original_end_date}에서 {adjusted_end_date}로 자동 조정했습니다."
             )
             end_date = adjusted_end_date
@@ -1299,7 +1299,7 @@ async def search_business_information(
         if not corp_code:
             return f"회사 검색 오류: {matched_name}"
 
-        ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
+        await ctx.info(f"{matched_name}(고유번호: {corp_code})의 공시를 검색합니다.")
 
         # 공시 목록 조회
         disclosures, error_msg = await get_disclosure_list(
@@ -1308,7 +1308,7 @@ async def search_business_information(
         if error_msg:
             return error_msg
 
-        ctx.info(
+        await ctx.info(
             f"{len(disclosures)}개의 정기공시를 찾았습니다. 적절한 공시를 선택하여 정보를 추출합니다."
         )
 
@@ -1339,7 +1339,7 @@ async def search_business_information(
         rcept_dt = selected_disclosure.get("rcept_dt", "날짜 없음")
         rcept_no = selected_disclosure.get("rcept_no", "")
 
-        ctx.info(
+        await ctx.info(
             f"'{report_name}' (접수번호: {rcept_no}, 접수일: {rcept_dt}) 공시에서 '{information_type}' 정보를 추출합니다."
         )
 
@@ -1377,7 +1377,7 @@ async def search_business_information(
                         + f"\n\n... (이하 생략, 총 {len(result)} 자)"
                     )
         except Exception as e:
-            ctx.error(f"섹션 추출 중 예상치 못한 오류 발생: {e}")
+            await ctx.error(f"섹션 추출 중 예상치 못한 오류 발생: {e}")
             result = f"# {matched_name} - {information_type}\n\n"
             result += f"## 출처: {report_name} (접수일: {rcept_dt})\n\n"
             result += f"정보 추출 중 오류 발생: {str(e)}\n\n"
@@ -1411,7 +1411,7 @@ async def get_current_date(ctx: Context = None) -> str:
 
     # 컨텍스트가 제공된 경우 로그 출력
     if ctx:
-        ctx.info(f"현재 날짜: {formatted_date}")
+        await ctx.info(f"현재 날짜: {formatted_date}")
 
     return formatted_date
 
@@ -1551,12 +1551,12 @@ async def search_json_financial_data(
         fs_div_name = "개별재무제표" if fs_div == "OFS" else "연결재무제표"
 
         if statement_type is None:
-            ctx.info(
+            await ctx.info(
                 f"{company_name}의 {bsns_year}년 {report_name} {fs_div_name} 전체 재무정보를 검색합니다."
             )
         else:
             statement_name = get_statement_name(statement_type)
-            ctx.info(
+            await ctx.info(
                 f"{company_name}의 {bsns_year}년 {report_name} {fs_div_name} 중 {statement_name} 정보를 검색합니다."
             )
 
@@ -1565,7 +1565,7 @@ async def search_json_financial_data(
         if not corp_code:
             return f"회사 검색 오류: {matched_name}"
 
-        ctx.info(f"{matched_name}(고유번호: {corp_code})의 재무정보를 검색합니다.")
+        await ctx.info(f"{matched_name}(고유번호: {corp_code})의 재무정보를 검색합니다.")
 
         # JSON API를 통해 재무 데이터 조회
         financial_data, error_msg = await get_financial_json(
@@ -1670,4 +1670,20 @@ async def search_json_financial_data(
 
 # 서버 실행 코드
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse", "http"],
+        default="stdio",
+        help="MCP transport mode (stdio: local, http: remote)",
+    )
+    parser.add_argument("--host", default="0.0.0.0", help="Host to bind (http/sse mode)")
+    parser.add_argument("--port", type=int, default=8000, help="Port to listen on (http/sse mode)")
+    args = parser.parse_args()
+
+    if args.transport == "stdio":
+        mcp.run()
+    else:
+        mcp.run(transport=args.transport, host=args.host, port=args.port)
