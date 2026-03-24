@@ -9,3 +9,15 @@ dependencies = [
     "mcp[cli]>=1.6.0",
     "python-dotenv>=1.0.0",
 ]
+
+# Pylance / Pyright / basedpyright: resolve packages from uv’s default .venv
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+# Explicit paths so analysis works even if the venv has no interpreter stub in Scripts/
+extraPaths = [".venv/Lib/site-packages", ".venv/lib/python3.10/site-packages"]
+
+[tool.basedpyright]
+venvPath = "."
+venv = ".venv"
+extraPaths = [".venv/Lib/site-packages", ".venv/lib/python3.10/site-packages"]
